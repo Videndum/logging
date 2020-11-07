@@ -40,15 +40,6 @@ groups:
     reviews:
       required: 1
 
-  # The design team for reviewing deisng changes.
-  # Uses lables:
-  design:
-    conditions:
-      - "'ui/ux' in labels"
-    reviewers:
-      teams:
-        - design
-
   # Changing this file requires ADMIN approval
   pullapprove:
     conditions:

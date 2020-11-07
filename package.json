@@ -1,6 +1,6 @@
 {
-  "name": "@videndum/github-actions",
-  "version": "",
+  "name": "@videndum/logging",
+  "version": "1.0.0-alpha",
   "description": "",
   "repository": {
     "type": "",
@@ -11,8 +11,8 @@
     "url": ""
   },
   "workspaces": [],
-  "author": "",
-  "contributors": [],
+  "author": "Videndum",
+  "contributors": ["TGTGamer"],
   "license": "",
   "private": true,
   "main": "",
@@ -28,6 +28,6 @@
     "prettier-plugin-organize-imports": "^1.1.1",
     "prettier-plugin-pkg": "^0.8.0",
     "prettier-plugin-sh": "^0.6.0",
-    "prettier-standard": "^16.4.1"
+    "prettier": "^2.1.2"
   }
 }
