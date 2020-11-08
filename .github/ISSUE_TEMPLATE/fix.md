@@ -12,6 +12,7 @@ smartcloud-discord context example: bug(discord): {your title here}
 ## Describe the fix
 
 Addresses bug: #<number>
+
 <!-- A clear and concise description of what the fix is. -->
 
 ### Expected behaviour
@@ -65,4 +66,3 @@ We would appreciate it if you could maintain this section cleanly and clearly. I
 - [ ] Have included logs or screenshots
 - [ ] Have linked any related issues
 - [ ] Fix confirmed by <!--@yourusername & @friendsusername-->
-

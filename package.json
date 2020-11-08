@@ -10,9 +10,10 @@
     "email": "",
     "url": ""
   },
-  "workspaces": [],
   "author": "Videndum",
-  "contributors": ["TGTGamer"],
+  "contributors": [
+    "TGTGamer"
+  ],
   "license": "",
   "private": true,
   "main": "",
@@ -22,12 +23,39 @@
     "test": ""
   },
   "keywords": [],
-  "scripts": {},
-  "dependencies": {},
+  "scripts": {
+    "check-i18n": "npm run i18n -- --check",
+    "dev": "yarn i18n && yarn format && tsc && yarn test",
+    "format": "prettier --config .prettier.json --write .",
+    "format-check": "prettier --config .prettier.json --check .",
+    "i18n": "sync-i18n --files './locales/*.json' --primary en --languages es ja fr it en zh ko en-GB en-US de-CH zh-Hant zh-Hans --space 2 --le LF --fn true -e true",
+    "prerelease": "standard-version --prerelease",
+    "release": "standard-version",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@google-cloud/logging": "^8.0.8",
+    "@sentry/integrations": "^5.27.3",
+    "@sentry/node": "^5.27.3",
+    "chalk": "^4.1.0",
+    "i18next": "^19.5.2",
+    "i18next-fs-backend": "^1.0.7"
+  },
   "devDependencies": {
+    "@overnightjs/core": "^1.7.4",
+    "@types/fs-extra": "^9.0.1",
+    "@types/jest": "^26.0.15",
+    "@types/node": "^14.0.14",
+    "eslint-plugin-i18next": "^4.5.0",
+    "i18next-json-sync": "^2.3.1",
+    "jest": "^26.6.1",
+    "jest-circus": "^26.6.3",
+    "prettier": "^2.1.2",
     "prettier-plugin-organize-imports": "^1.1.1",
     "prettier-plugin-pkg": "^0.8.0",
-    "prettier-plugin-sh": "^0.6.0",
-    "prettier": "^2.1.2"
+    "ts-jest": "^26.4.3",
+    "tslib": "^2.0.3",
+    "tslint": "^6.1.0",
+    "typescript": "^3.9.5"
   }
 }
