@@ -1,14 +1,14 @@
 {
   "name": "@videndum/logging",
   "version": "1.0.0-alpha",
-  "description": "",
+  "description": "Utilities used by Videndum Studios to enable Logging, i18n, and much more",
   "repository": {
-    "type": "",
-    "url": ""
+    "type": "git",
+    "url": "https://github.com/Videndum/utilities"
   },
   "bugs": {
-    "email": "",
-    "url": ""
+    "email": "bugs.utilities@videndum.studio",
+    "url": "https://github.com/Videndum/utilities/issues"
   },
   "author": "Videndum",
   "contributors": [
@@ -16,12 +16,13 @@
   ],
   "license": "",
   "private": true,
-  "main": "",
+  "main": "lib/index.js",
   "directories": {
-    "lib": "",
-    "doc": "",
-    "test": ""
+    "lib": "lib",
+    "doc": "docs",
+    "test": "__tests__"
   },
+  "publishConfig": { "registry": "https://npm.pkg.github.com/" },
   "keywords": [],
   "scripts": {
     "check-i18n": "npm run i18n -- --check",
