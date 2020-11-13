@@ -12,9 +12,9 @@
       "solved": "File Directory created. Error can be safely ignored",
       "thrown": "Error thrown when creating directory: "
     },
-    "localize": "Data for localisation unavailable: {{what}}",
     "logging": "No valid data to log",
     "unspecific": {
+      "localize": "Data for localisation unavailable: {{what}}",
       "default": "Something went wrong."
     }
   },

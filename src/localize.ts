@@ -2,7 +2,7 @@ import i18Next from 'i18next'
 import { T } from './types'
 const Backend = require('i18next-fs-backend')
 class Localizer {
-  private locales = `${process.cwd()}/locales`
+  private locales = `${__dirname}/../locales`
   public readonly localize = i18Next
 
   constructor() {

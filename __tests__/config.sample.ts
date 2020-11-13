@@ -10,8 +10,7 @@ export const data: ConstructData = {
   sentry: {
     enabled: true,
     config: {
-      dsn:
-        '',
+      dsn: '',
       debug: true,
       release: process.env.npm_package_version
     }

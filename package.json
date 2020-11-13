@@ -1,6 +1,6 @@
 {
-  "name": "@videndum/logging",
-  "version": "1.0.0-alpha",
+  "name": "@videndum/utilities",
+  "version": "1.0.0-alpha.2",
   "description": "Utilities used by Videndum Studios to enable Logging, i18n, and much more",
   "repository": {
     "type": "git",
@@ -15,14 +15,13 @@
     "TGTGamer"
   ],
   "license": "",
-  "private": true,
+  "private": false,
   "main": "lib/index.js",
   "directories": {
     "lib": "lib",
     "doc": "docs",
     "test": "__tests__"
   },
-  "publishConfig": { "registry": "https://npm.pkg.github.com/" },
   "keywords": [],
   "scripts": {
     "check-i18n": "npm run i18n -- --check",
@@ -58,5 +57,9 @@
     "tslib": "^2.0.3",
     "tslint": "^6.1.0",
     "typescript": "^3.9.5"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/",
+    "access": "public"
   }
 }

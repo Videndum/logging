@@ -54,7 +54,7 @@ export type constructPair = {
   data: string
   level: number
 }
-type loggingData = {
+export type loggingData = {
   name?: string
   raw?: string
   error?: string

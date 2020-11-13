@@ -223,7 +223,8 @@ export class Log {
       try {
         await this.gcpLogger.write(entry)
       } catch (err) {
-        this.log({ raw: `Thrown error: ${err}` }, 6)
+        this.log({ raw: `Thrown error: ${err}` }, 5)
+        this.constructData.gcp.enabled = false
       }
     }
 
@@ -247,10 +248,13 @@ export class Log {
             `${this.constructData.file?.config.logDirectory}/${this.constructData.file?.config.fileNamePattern}`,
             `${metadata.severity}     ` + data + '\r\n',
             err => {
-              if (err) this.log({ error: err.message }, 5)
+              if (err) throw new Error(err.message)
             }
           )
-        } catch {}
+        } catch (err) {
+          this.log({ error: err }, 5)
+          this.constructData.file.enabled = false
+        }
       }
 
       // @ts-expect-error Colorise
@@ -271,7 +275,8 @@ export class Log {
             this.sentry.captureMessage(data)
           })
         } catch (_) {
-          this.log({ error: _ }, 4)
+          this.log({ error: _ }, 5)
+          this.constructData.sentry.enabled = false
         }
       }
     }

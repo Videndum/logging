@@ -34,5 +34,10 @@
       "initialised": ""
     },
     "warn": "warn"
+  },
+  "error": {
+    "unspecific": {
+      "localize": "error.unspecific.localize"
+    }
   }
 }
