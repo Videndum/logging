@@ -69,7 +69,7 @@ export declare class Log {
      *  }
      * @return logs data to console, sentry and log file as appropriate
      */
-    log(loggingData: loggingData, type?: number | string): Promise<boolean>;
+    log(loggingData: loggingData, type?: number | string): Promise<void>;
     translate(name: string): string;
     /**
      * Used to shutdown logging - to ensure that all logs are processed

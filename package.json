@@ -1,6 +1,6 @@
 {
   "name": "@videndum/utilities",
-  "version": "1.0.0-alpha.2",
+  "version": "1.0.0-alpha.3",
   "description": "Utilities used by Videndum Studios to enable Logging, i18n, and much more",
   "repository": {
     "type": "git",
@@ -35,8 +35,8 @@
   },
   "dependencies": {
     "@google-cloud/logging": "^8.0.8",
-    "@sentry/integrations": "^5.27.3",
-    "@sentry/node": "^5.27.3",
+    "@sentry/integrations": "^5.27.6",
+    "@sentry/node": "^5.27.6",
     "chalk": "^4.1.0",
     "i18next": "^19.5.2",
     "i18next-fs-backend": "^1.0.7"

@@ -1,3 +1,5 @@
+import { Metadata } from '@google-cloud/logging/build/src/log'
+
 export interface ConstructData {
   gcp?: GCPData
   sentry?: SentryData
@@ -51,13 +53,14 @@ type StringPair = {
   value: string
 }
 export type constructPair = {
-  data: string
+  data: loggingData
   level: number
 }
 export interface loggingData extends Error {
-  raw?: string
-  error?: Error
-  translate?: T
+  translate?: boolean
+  errors?: Error[] | Error
+  T?: T
+  metadata?: Metadata
 }
 export type T = {
   defaultValue?: string[]

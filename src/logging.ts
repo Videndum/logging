@@ -11,6 +11,7 @@ import {
   loggingData,
   SentryData
 } from './types'
+
 const chalk = require('chalk')
 
 declare global {
@@ -83,19 +84,33 @@ export class Log {
     if (constructData.file?.enabled)
       await this.configureFile(constructData.file)
     await this.constructorLogs.forEach(log => {
-      // this.log({ name: log.data }, log.level)
+      this.log(log.data, log.level)
     })
     this.configured = true
   }
 
   configureGCP(gcpData: GCPData) {
-    this.constructorLogs.push({ data: 'logging.gcp.constructor', level: 1 })
+    this.constructorLogs.push({
+      data: {
+        name: 'INFO',
+        message: 'logging.gcp.constructor',
+        translate: true
+      },
+      level: 1
+    })
     this.gcp = new Logging({ projectId: gcpData.projectid })
     this.gcpLogger = this.gcp.log(gcpData.logname)
   }
 
   configureSentry(SentryData: SentryData) {
-    this.constructorLogs.push({ data: 'logging.sentry.constructor', level: 1 })
+    this.constructorLogs.push({
+      data: {
+        name: 'INFO',
+        message: 'logging.sentry.constructor',
+        translate: true
+      },
+      level: 1
+    })
     try {
       this.sentry.init({
         ...SentryData.config,
@@ -118,7 +133,15 @@ export class Log {
           })
       })
     } catch (_) {
-      this.constructorLogs.push({ data: 'logging.sentry.error' + _, level: 6 })
+      this.constructorLogs.push({
+        data: {
+          name: 'INFO',
+          message: 'logging.sentry.error',
+          errors: _,
+          translate: true
+        },
+        level: 6
+      })
     }
   }
 
@@ -128,13 +151,25 @@ export class Log {
    * @since 1.0.0-alpha
    */
   configureFile(fileData: fileData) {
-    this.constructorLogs.push({ data: 'logging.file.constructor', level: 1 })
+    this.constructorLogs.push({
+      data: {
+        name: 'INFO',
+        message: 'logging.file.constructor',
+        translate: true
+      },
+      level: 1
+    })
     fs.access(fileData.config.logDirectory, fs.constants.F_OK, (err: any) => {
       if (!err) {
         return
       } else {
         this.constructorLogs.push({
-          data: 'errors.fileDirectory.caught' + err,
+          data: {
+            name: 'INFO',
+            message: 'errors.fileDirectory.caught',
+            errors: err,
+            translate: true
+          },
           level: 6
         })
         fs.mkdir(
@@ -143,12 +178,22 @@ export class Log {
           async (err: any) => {
             if (err)
               this.constructorLogs.push({
-                data: 'errors.fileDirectory.thrown' + err,
+                data: {
+                  name: 'INFO',
+                  message: 'errors.fileDirectory.thrown',
+                  errors: err,
+                  translate: true
+                },
                 level: 6
               })
             else
               this.constructorLogs.push({
-                data: `errors.fileDirectory.solved`,
+                data: {
+                  name: 'INFO',
+                  message: 'errors.fileDirectory.solved',
+                  errors: err,
+                  translate: true
+                },
                 level: 3
               })
           }
@@ -187,105 +232,108 @@ export class Log {
    * @return logs data to console, sentry and log file as appropriate
    */
   async log(loggingData: loggingData, type?: number | string) {
-    // Meta for Cloud Logging
-    console.log('Stack error: "' + loggingData.stack + '"')
-    let metadata = {
-      resource: {
-        type: 'global'
-      },
-      severity: 'INFO'
+    if (loggingData.translate)
+      loggingData.message = i18.t(loggingData.message, loggingData.T)
+    if (loggingData.errors) {
+      if (!Array.isArray(loggingData.errors))
+        loggingData.message = loggingData.message + ' ' + loggingData.errors
+      else {
+        loggingData.errors.forEach(
+          error => (loggingData.message = loggingData.message + ' ' + error)
+        )
+      }
     }
-    let data = new Error()
 
-    if (loggingData.error) data = loggingData.error
-    else if (loggingData.name)
-      data.message = i18.t(loggingData.name, loggingData.translate)
-    else if (loggingData.raw) data.message = loggingData.raw
-    else {
-      this.log(new Error('errors.logging'))
-      return false
-    }
     // Defines log type
     if (type && typeof type == 'string') {
       if (this.loglevels.indexOf(type) != -1) {
-        metadata.severity = type.toUpperCase()
+        loggingData.name = type.toUpperCase()
         type = this.loglevels.indexOf(type)
       } else {
-        metadata.severity = 'DEFAULT'
+        loggingData.name = 'DEFAULT'
         type = 0
       }
     } else if (typeof type == 'number' && type < this.loglevels.length) {
-      metadata.severity = this.loglevels[type].toUpperCase()
+      loggingData.name = this.loglevels[type].toUpperCase()
       type = type
     } else {
-      metadata.severity = `DEFAULT`
+      loggingData.name = `DEFAULT`
       type = 0
     }
 
     // log to cloud logger
-    // if (this.constructData.gcp?.enabled) {
-    //   let entry = this.gcpLogger.entry(metadata, data)
-    //   try {
-    //     await this.gcpLogger.write(entry)
-    //   } catch (err) {
-    //     this.log({ raw: `Thrown error: ${err}` }, 5)
-    //     this.constructData.gcp.enabled = false
-    //   }
-    // }
+    if (this.constructData.gcp?.enabled) {
+      if (!loggingData.metadata)
+        loggingData.metadata = {
+          resource: {
+            type: 'global'
+          },
+          severity: loggingData.name
+        }
+      let entry = this.gcpLogger.entry(loggingData.metadata, loggingData)
+      try {
+        await this.gcpLogger.write(entry)
+      } catch (err) {
+        this.log(err, 5)
+        this.constructData.gcp.enabled = false
+      }
+    }
 
-    // // Translate the metadata
-    // metadata.severity = await this.translate(
-    //   `logging.${metadata.severity.toLowerCase()}`
-    // )
+    // Translate the metadata
+    loggingData.name = await this.translate(
+      `logging.${loggingData.name.toLowerCase()}`
+    )
 
-    // // add spacing
-    // if (metadata.severity.length < 15) {
-    //   for (let i = metadata.severity.length; i < 15; i++) {
-    //     metadata.severity += ' '
-    //   }
-    // }
+    // add spacing
+    if (loggingData.name.length < 15) {
+      for (let i = loggingData.name.length; i < 15; i++) {
+        loggingData.name += ' '
+      }
+    }
 
-    // if (type >= this.loglevel || process.env.DEBUG == 'true' || type == 1) {
-    //   // Log to local logger
-    //   if (this.constructData.file?.enabled) {
-    //     try {
-    //       fs.appendFile(
-    //         `${this.constructData.file?.config.logDirectory}/${this.constructData.file?.config.fileNamePattern}`,
-    //         `${metadata.severity}     ` + data + '\r\n',
-    //         err => {
-    //           if (err) throw new Error(err.message)
-    //         }
-    //       )
-    //     } catch (err) {
-    //       this.log({ error: err }, 5)
-    //       this.constructData.file.enabled = false
-    //     }
-    //   }
+    if (type >= this.loglevel || process.env.DEBUG == 'true' || type == 1) {
+      // Log to local logger
+      if (this.constructData.file?.enabled) {
+        try {
+          fs.appendFile(
+            `${this.constructData.file?.config.logDirectory}/${this.constructData.file?.config.fileNamePattern}`,
+            `${loggingData.name}     ` + loggingData.message + '\r\n',
+            err => {
+              if (err) throw err
+            }
+          )
+        } catch (err) {
+          this.log(err, 5)
+          this.constructData.file.enabled = false
+        }
+      }
 
-    //   // @ts-expect-error Colorise
-    //   metadata.severity = style.log[`${this.loglevels[type]}`](
-    //     metadata.severity
-    //   )
+      // Log to sentry
+      if (type >= 4 && this.constructData.sentry?.enabled) {
+        try {
+          const t: number = type,
+            data = loggingData
+          data.name = loggingData.message
+          this.sentry.withScope(scope => {
+            if (t == 4) scope.setLevel(this.sentry.Severity.Warning)
+            else if (t == 5) scope.setLevel(this.sentry.Severity.Error)
+            else if (t == 6) scope.setLevel(this.sentry.Severity.Critical)
+            else if (t >= 7) scope.setLevel(this.sentry.Severity.Fatal)
+            this.sentry.captureException(data)
+          })
+        } catch (_) {
+          this.log(_, 5)
+          this.constructData.sentry.enabled = false
+        }
+      }
 
-    //   if (!!this.constructData.console?.enabled)
-    //     console.log(`${metadata.severity}     ` + data.message)
+      // @ts-expect-error Colorise
+      loggingData.name = style.log[this.loglevels[type]](loggingData.name)
 
-    //   // Log to sentry
-    //   if (type > 4 && this.constructData.sentry?.enabled) {
-    //     try {
-    //       const t: number = type
-    //       this.sentry.withScope(scope => {
-    //         if (t == 5) scope.setLevel(this.sentry.Severity.Error)
-    //         else if (t > 6) scope.setLevel(this.sentry.Severity.Fatal)
-    //         this.sentry.captureEvent(data)
-    //       })
-    //     } catch (_) {
-    //       this.log({ error: _ }, 5)
-    //       this.constructData.sentry.enabled = false
-    //     }
-    //   }
-    // }
-    return true
+      if (!!this.constructData.console?.enabled)
+        console.log(`${loggingData.name}     ` + loggingData.message)
+    }
+    return
   }
 
   translate(name: string): string {
@@ -302,10 +350,10 @@ export class Log {
       this.sentry
         .close(2000)
         .then(async () => {
-          // await this.log(
-          //   { raw: 'Logger successfully shutdown - safe to end all processes' },
-          //   2
-          // )
+          await this.log(
+            new Error('Logger successfully shutdown - safe to end all process'),
+            2
+          )
           resolve()
         })
         .catch(_ => reject(_))
