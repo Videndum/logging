@@ -83,7 +83,7 @@ export class Log {
     if (constructData.file?.enabled)
       await this.configureFile(constructData.file)
     await this.constructorLogs.forEach(log => {
-      this.log({ name: log.data }, log.level)
+      // this.log({ name: log.data }, log.level)
     })
     this.configured = true
   }
@@ -99,7 +99,12 @@ export class Log {
     try {
       this.sentry.init({
         ...SentryData.config,
-        integrations: [new RewriteFrames({ root: global.__rootdir__ })]
+        integrations: [
+          new Sentry.Integrations.Console(),
+          new Sentry.Integrations.Modules(),
+          new Sentry.Integrations.Http(),
+          new RewriteFrames({ root: global.__rootdir__ })
+        ]
       })
       this.sentry.configureScope(scope => {
         if (SentryData.extras?.user) scope.setUser(SentryData.extras.user)
@@ -183,21 +188,21 @@ export class Log {
    */
   async log(loggingData: loggingData, type?: number | string) {
     // Meta for Cloud Logging
+    console.log('Stack error: "' + loggingData.stack + '"')
     let metadata = {
       resource: {
         type: 'global'
       },
       severity: 'INFO'
     }
-
-    let data: string
+    let data = new Error()
 
     if (loggingData.error) data = loggingData.error
     else if (loggingData.name)
-      data = i18.t(loggingData.name, loggingData.translate)
-    else if (loggingData.raw) data = loggingData.raw
+      data.message = i18.t(loggingData.name, loggingData.translate)
+    else if (loggingData.raw) data.message = loggingData.raw
     else {
-      this.log({ name: 'errors.logging' })
+      this.log(new Error('errors.logging'))
       return false
     }
     // Defines log type
@@ -218,68 +223,68 @@ export class Log {
     }
 
     // log to cloud logger
-    if (this.constructData.gcp?.enabled) {
-      let entry = this.gcpLogger.entry(metadata, data)
-      try {
-        await this.gcpLogger.write(entry)
-      } catch (err) {
-        this.log({ raw: `Thrown error: ${err}` }, 5)
-        this.constructData.gcp.enabled = false
-      }
-    }
+    // if (this.constructData.gcp?.enabled) {
+    //   let entry = this.gcpLogger.entry(metadata, data)
+    //   try {
+    //     await this.gcpLogger.write(entry)
+    //   } catch (err) {
+    //     this.log({ raw: `Thrown error: ${err}` }, 5)
+    //     this.constructData.gcp.enabled = false
+    //   }
+    // }
 
-    // Translate the metadata
-    metadata.severity = await this.translate(
-      `logging.${metadata.severity.toLowerCase()}`
-    )
+    // // Translate the metadata
+    // metadata.severity = await this.translate(
+    //   `logging.${metadata.severity.toLowerCase()}`
+    // )
 
-    // add spacing
-    if (metadata.severity.length < 15) {
-      for (let i = metadata.severity.length; i < 15; i++) {
-        metadata.severity += ' '
-      }
-    }
+    // // add spacing
+    // if (metadata.severity.length < 15) {
+    //   for (let i = metadata.severity.length; i < 15; i++) {
+    //     metadata.severity += ' '
+    //   }
+    // }
 
-    if (type >= this.loglevel || process.env.DEBUG == 'true' || type == 1) {
-      // Log to local logger
-      if (this.constructData.file?.enabled) {
-        try {
-          fs.appendFile(
-            `${this.constructData.file?.config.logDirectory}/${this.constructData.file?.config.fileNamePattern}`,
-            `${metadata.severity}     ` + data + '\r\n',
-            err => {
-              if (err) throw new Error(err.message)
-            }
-          )
-        } catch (err) {
-          this.log({ error: err }, 5)
-          this.constructData.file.enabled = false
-        }
-      }
+    // if (type >= this.loglevel || process.env.DEBUG == 'true' || type == 1) {
+    //   // Log to local logger
+    //   if (this.constructData.file?.enabled) {
+    //     try {
+    //       fs.appendFile(
+    //         `${this.constructData.file?.config.logDirectory}/${this.constructData.file?.config.fileNamePattern}`,
+    //         `${metadata.severity}     ` + data + '\r\n',
+    //         err => {
+    //           if (err) throw new Error(err.message)
+    //         }
+    //       )
+    //     } catch (err) {
+    //       this.log({ error: err }, 5)
+    //       this.constructData.file.enabled = false
+    //     }
+    //   }
 
-      // @ts-expect-error Colorise
-      metadata.severity = style.log[`${this.loglevels[type]}`](
-        metadata.severity
-      )
+    //   // @ts-expect-error Colorise
+    //   metadata.severity = style.log[`${this.loglevels[type]}`](
+    //     metadata.severity
+    //   )
 
-      if (!!this.constructData.console?.enabled)
-        console.log(`${metadata.severity}     ` + data)
+    //   if (!!this.constructData.console?.enabled)
+    //     console.log(`${metadata.severity}     ` + data.message)
 
-      // Log to sentry
-      if (type > 4 && this.constructData.sentry?.enabled) {
-        try {
-          const t: number = type
-          this.sentry.withScope(scope => {
-            if (t == 5) scope.setLevel(this.sentry.Severity.Error)
-            else if (t > 6) scope.setLevel(this.sentry.Severity.Fatal)
-            this.sentry.captureMessage(data)
-          })
-        } catch (_) {
-          this.log({ error: _ }, 5)
-          this.constructData.sentry.enabled = false
-        }
-      }
-    }
+    //   // Log to sentry
+    //   if (type > 4 && this.constructData.sentry?.enabled) {
+    //     try {
+    //       const t: number = type
+    //       this.sentry.withScope(scope => {
+    //         if (t == 5) scope.setLevel(this.sentry.Severity.Error)
+    //         else if (t > 6) scope.setLevel(this.sentry.Severity.Fatal)
+    //         this.sentry.captureEvent(data)
+    //       })
+    //     } catch (_) {
+    //       this.log({ error: _ }, 5)
+    //       this.constructData.sentry.enabled = false
+    //     }
+    //   }
+    // }
     return true
   }
 
@@ -297,10 +302,10 @@ export class Log {
       this.sentry
         .close(2000)
         .then(async () => {
-          await this.log(
-            { raw: 'Logger successfully shutdown - safe to end all processes' },
-            2
-          )
+          // await this.log(
+          //   { raw: 'Logger successfully shutdown - safe to end all processes' },
+          //   2
+          // )
           resolve()
         })
         .catch(_ => reject(_))

@@ -54,12 +54,11 @@ export declare type constructPair = {
     data: string;
     level: number;
 };
-export declare type loggingData = {
-    name?: string;
+export interface loggingData extends Error {
     raw?: string;
-    error?: string;
+    error?: Error;
     translate?: T;
-};
+}
 export declare type T = {
     defaultValue?: string[];
     count?: number;

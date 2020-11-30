@@ -54,10 +54,9 @@ export type constructPair = {
   data: string
   level: number
 }
-export type loggingData = {
-  name?: string
+export interface loggingData extends Error {
   raw?: string
-  error?: string
+  error?: Error
   translate?: T
 }
 export type T = {
