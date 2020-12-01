@@ -55,12 +55,28 @@ export declare type constructPair = {
     data: loggingData;
     level: number;
 };
-export interface loggingData extends Error {
-    translate?: boolean;
+export declare class loggingData extends Error {
     errors?: Error[] | Error;
+    translate?: boolean;
+    userData?: userData;
     T?: T;
     metadata?: Metadata;
+    constructor(name: LoggingLevels, message?: string, errors?: Error[] | Error, options?: {
+        translate?: boolean;
+        userData?: userData;
+        T?: T;
+        metadata?: Metadata;
+    });
 }
+declare type userData = {
+    id?: string;
+    email?: string;
+    username?: string;
+    platform?: string;
+    arch?: string;
+    release?: string;
+};
+export declare type LoggingLevels = 'DEFAULT' | '0' | 'DEBUG' | '100' | 'INFO' | '200' | 'NOTICE' | '300' | 'WARN' | '400' | 'ERROR' | '500' | 'CRITICAL' | '600' | 'ALERT' | '700' | 'EMERGENCY' | '800';
 export declare type T = {
     defaultValue?: string[];
     count?: number;

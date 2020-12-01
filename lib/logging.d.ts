@@ -1,5 +1,6 @@
+import { Log } from '@google-cloud/logging';
 import * as Sentry from '@sentry/node';
-import { ConstructData, fileData, GCPData, loggingData, SentryData } from './types';
+import { ConstructData, fileData, GCPData, loggingData, LoggingLevels, SentryData } from './types';
 declare global {
     namespace NodeJS {
         interface Global {
@@ -33,14 +34,14 @@ export declare const style: {
  * @author TGTGamer
  * @since 1.0.0-alpha
  */
-export declare class Log {
+export declare class Logger {
     private gcp;
     protected constructData: ConstructData;
     loglevel: number;
     readonly sentry: typeof Sentry;
     readonly loglevels: string[];
     private constructorLogs;
-    gcpLogger: any;
+    gcpLogger: Log | undefined;
     configured: boolean;
     constructor(constructData: ConstructData);
     configureLogger(constructData: ConstructData): Promise<void>;
@@ -56,7 +57,7 @@ export declare class Log {
      * Change the logging level.
      * @param {number | string} level - Logging level to use.
      */
-    setloglevel(level: number | string): void;
+    setloglevel(level: LoggingLevels): void;
     /**
      * Log your information or error to all platforms
      * @param  {loggingData} loggingData
@@ -69,7 +70,7 @@ export declare class Log {
      *  }
      * @return logs data to console, sentry and log file as appropriate
      */
-    log(loggingData: loggingData, type?: number | string): Promise<void>;
+    log(loggingData: loggingData): Promise<void>;
     translate(name: string): string;
     /**
      * Used to shutdown logging - to ensure that all logs are processed

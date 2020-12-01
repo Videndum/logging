@@ -2,7 +2,7 @@ import * as index from '../src/index'
 import { data } from './config'
 
 test('test logger builds', async () => {
-  const logger = await new index.Log(data)
+  const logger = await new index.Logger(data)
   while (logger.configured) {
     console.log('looping')
   } //delay to ensure logger is setup
@@ -11,7 +11,7 @@ test('test logger builds', async () => {
 
 test('logs to console', async () => {
   let config = { console: data.console }
-  const logger = new index.Log(config)
+  const logger = new index.Logger(config)
   while (logger.configured) {
     console.log('looping')
   } //delay to ensure logger is setup
@@ -21,17 +21,17 @@ test('logs to console', async () => {
 
 test('logs to sentry', async () => {
   let config = { sentry: data.sentry }
-  const logger = new index.Log(config)
+  const logger = new index.Logger(config)
   while (logger.configured) {
     console.log('looping')
   } //delay to ensure logger is setup
-  await logger.log(new Error('Successfully logged to sentry'), 6)
+  await logger.log(new Error('Successfully logged to sentry'), 4)
   await logger.shutdown()
 })
 
 test('logs to gcp', async () => {
   let config = { gcp: data.gcp }
-  const logger = new index.Log(config)
+  const logger = new index.Logger(config)
   while (logger.configured) {
     console.log('looping')
   } //delay to ensure logger is setup
@@ -41,7 +41,7 @@ test('logs to gcp', async () => {
 
 test('logs to file', async () => {
   let config = { file: data.file }
-  const logger = new index.Log(config)
+  const logger = new index.Logger(config)
   while (logger.configured) {
     console.log('looping')
   } //delay to ensure logger is setup

@@ -56,12 +56,66 @@ export type constructPair = {
   data: loggingData
   level: number
 }
-export interface loggingData extends Error {
-  translate?: boolean
+
+export class loggingData extends Error {
   errors?: Error[] | Error
+  translate?: boolean
+  userData?: userData
   T?: T
   metadata?: Metadata
+  constructor(
+    name: LoggingLevels,
+    message?: string,
+    errors?: Error[] | Error,
+    options?: {
+      translate?: boolean
+      userData?: userData
+      T?: T
+      metadata?: Metadata
+    }
+  ) {
+    super(message)
+    this.name = name
+    this.errors = errors
+    this.translate = options?.translate
+    this.userData = options?.userData
+    this.T = options?.T
+    this.metadata = options?.metadata
+
+    // restore prototype chain
+    const actualProto = new.target.prototype
+    Object.setPrototypeOf(this, actualProto)
+  }
 }
+
+type userData = {
+  id?: string
+  email?: string
+  username?: string
+  platform?: string
+  arch?: string
+  release?: string
+}
+export type LoggingLevels =
+  | 'DEFAULT'
+  | '0' // the log entry has no assigned severity level.
+  | 'DEBUG'
+  | '100' //  Debug or trace information.
+  | 'INFO'
+  | '200' //  Routine information, such as ongoing status or performance.
+  | 'NOTICE'
+  | '300' //  Normal but significant events, such as start up, shut down, or a configuration change.
+  | 'WARN'
+  | '400' //  Warning events might cause problems.
+  | 'ERROR'
+  | '500' //  Error events are likely to cause problems.
+  | 'CRITICAL'
+  | '600' //  Critical events cause more severe problems or outages.
+  | 'ALERT'
+  | '700' //  A person must take an action immediately.
+  | 'EMERGENCY'
+  | '800' //  One or more systems are unusable.
+
 export type T = {
   defaultValue?: string[]
   count?: number

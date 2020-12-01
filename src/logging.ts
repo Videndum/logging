@@ -1,7 +1,8 @@
-import { Logging } from '@google-cloud/logging'
+import { Log, Logging } from '@google-cloud/logging'
 import { RewriteFrames } from '@sentry/integrations'
 import * as Sentry from '@sentry/node'
 import * as fs from 'fs'
+import os from 'os'
 import { i18 } from './localize'
 import {
   ConstructData,
@@ -9,6 +10,7 @@ import {
   fileData,
   GCPData,
   loggingData,
+  LoggingLevels,
   SentryData
 } from './types'
 
@@ -34,15 +36,15 @@ export const style = {
     videndumPurple: chalk.hex('4B428E')
   },
   log: {
-    default: chalk.inverse, // (0) The log entry has no assigned severity level.
-    debug: chalk.grey, // (100) Debug or trace information.
-    info: chalk.green, // (200) Routine information, such as ongoing status or performance.
-    notice: chalk.green, // (300) Normal but significant events, such as start up, shut down, or a configuration change.
-    warn: chalk.white, // (400) Warning events might cause problems.
-    error: chalk.yellow, // (500) Error events are likely to cause problems.
-    critical: chalk.yellow, // (600) Critical events cause more severe problems or outages.
-    alert: chalk.red, // (700) A person must take an action immediately.
-    emergency: chalk.red // (800) One or more systems are unusable.
+    default: chalk.inverse,
+    debug: chalk.grey,
+    info: chalk.green,
+    notice: chalk.green,
+    warn: chalk.white,
+    error: chalk.yellow,
+    critical: chalk.yellow,
+    alert: chalk.red,
+    emergency: chalk.red
   }
 }
 
@@ -51,24 +53,24 @@ export const style = {
  * @author TGTGamer
  * @since 1.0.0-alpha
  */
-export class Log {
+export class Logger {
   private gcp: Logging = new Logging()
   protected constructData: ConstructData
   public loglevel: number = 1
   public readonly sentry = Sentry
   public readonly loglevels = [
-    'default', // (0) The log entry has no assigned severity level.
-    'debug', // (100) Debug or trace information.
-    'info', // (200) Routine information, such as ongoing status or performance.
-    'notice', // (300) Normal but significant events, such as start up, shut down, or a configuration change.
-    'warn', // (400) Warning events might cause problems.
-    'error', // (500) Error events are likely to cause problems.
-    'critical', // (600) Critical events cause more severe problems or outages.
-    'alert', // (700) A person must take an action immediately.
-    'emergency' // (800) One or more systems are unusable.
+    'DEFAULT',
+    'DEBUG',
+    'INFO',
+    'NOTICE',
+    'WARN',
+    'ERROR',
+    'CRITICAL',
+    'ALERT',
+    'EMERGENCY'
   ]
   private constructorLogs: constructPair[] = []
-  gcpLogger: any
+  gcpLogger: Log | undefined
   public configured: boolean = false
 
   constructor(constructData: ConstructData) {
@@ -84,7 +86,7 @@ export class Log {
     if (constructData.file?.enabled)
       await this.configureFile(constructData.file)
     await this.constructorLogs.forEach(log => {
-      this.log(log.data, log.level)
+      this.log(log.data)
     })
     this.configured = true
   }
@@ -117,9 +119,10 @@ export class Log {
         integrations: [
           new Sentry.Integrations.Console(),
           new Sentry.Integrations.Modules(),
-          new Sentry.Integrations.Http(),
+          new Sentry.Integrations.Http({ tracing: true }),
           new RewriteFrames({ root: global.__rootdir__ })
-        ]
+        ],
+        tracesSampleRate: 0.2
       })
       this.sentry.configureScope(scope => {
         if (SentryData.extras?.user) scope.setUser(SentryData.extras.user)
@@ -207,15 +210,11 @@ export class Log {
    * Change the logging level.
    * @param {number | string} level - Logging level to use.
    */
-  setloglevel(level: number | string) {
-    if (typeof level == 'string') {
-      if (this.loglevels.indexOf(level) != -1) {
-        this.loglevel = this.loglevels.indexOf(level)
-      } else {
-        this.loglevel = 2
-      }
+  setloglevel(level: LoggingLevels) {
+    if (Number(level) == undefined) {
+      this.loglevel = this.loglevels.indexOf(level)
     } else {
-      this.loglevel = level
+      this.loglevel = Number(level) / 100
     }
   }
 
@@ -231,7 +230,7 @@ export class Log {
    *  }
    * @return logs data to console, sentry and log file as appropriate
    */
-  async log(loggingData: loggingData, type?: number | string) {
+  async log(loggingData: loggingData) {
     if (loggingData.translate)
       loggingData.message = i18.t(loggingData.message, loggingData.T)
     if (loggingData.errors) {
@@ -243,38 +242,40 @@ export class Log {
         )
       }
     }
+    if (!loggingData.userData)
+      loggingData.userData = {
+        username: os.userInfo().username
+      }
+    ;(loggingData.userData.platform = os.platform()),
+      (loggingData.userData.arch = os.arch()),
+      (loggingData.userData.release = os.release())
 
     // Defines log type
-    if (type && typeof type == 'string') {
-      if (this.loglevels.indexOf(type) != -1) {
-        loggingData.name = type.toUpperCase()
-        type = this.loglevels.indexOf(type)
-      } else {
-        loggingData.name = 'DEFAULT'
-        type = 0
-      }
-    } else if (typeof type == 'number' && type < this.loglevels.length) {
-      loggingData.name = this.loglevels[type].toUpperCase()
-      type = type
-    } else {
-      loggingData.name = `DEFAULT`
-      type = 0
-    }
+    let type = Number(loggingData.name)
+    if (type != NaN) type = type / 100
+    else type = this.loglevels.indexOf(loggingData.name)
 
     // log to cloud logger
     if (this.constructData.gcp?.enabled) {
-      if (!loggingData.metadata)
-        loggingData.metadata = {
-          resource: {
-            type: 'global'
-          },
-          severity: loggingData.name
-        }
-      let entry = this.gcpLogger.entry(loggingData.metadata, loggingData)
       try {
+        if (!this.gcpLogger)
+          throw new Error(
+            "Can't log to google cloud platform without valid log configuration"
+          )
+        if (!loggingData.metadata)
+          loggingData.metadata = {
+            resource: {
+              type: 'global'
+            },
+            severity: loggingData.name
+          }
+        let entry = this.gcpLogger.entry(
+          loggingData.metadata,
+          loggingData.message
+        )
         await this.gcpLogger.write(entry)
       } catch (err) {
-        this.log(err, 5)
+        this.log(err)
         this.constructData.gcp.enabled = false
       }
     }
@@ -303,7 +304,7 @@ export class Log {
             }
           )
         } catch (err) {
-          this.log(err, 5)
+          this.log(err)
           this.constructData.file.enabled = false
         }
       }
@@ -315,6 +316,17 @@ export class Log {
             data = loggingData
           data.name = loggingData.message
           this.sentry.withScope(scope => {
+            scope.setUser({
+              username: loggingData.userData?.username,
+              email: loggingData.userData?.email
+            })
+            scope.setContext('platform', {
+              string: loggingData.userData?.platform
+            })
+            scope.setContext('arch', { string: loggingData.userData?.arch })
+            scope.setContext('platform release', {
+              string: loggingData.userData?.release
+            })
             if (t == 4) scope.setLevel(this.sentry.Severity.Warning)
             else if (t == 5) scope.setLevel(this.sentry.Severity.Error)
             else if (t == 6) scope.setLevel(this.sentry.Severity.Critical)
@@ -322,13 +334,14 @@ export class Log {
             this.sentry.captureException(data)
           })
         } catch (_) {
-          this.log(_, 5)
+          this.log(_)
           this.constructData.sentry.enabled = false
         }
       }
-
-      // @ts-expect-error Colorise
-      loggingData.name = style.log[this.loglevels[type]](loggingData.name)
+      // @ts-expect-error
+      loggingData.name = style.log[this.loglevels[type].toLowerCase()](
+        loggingData.name
+      )
 
       if (!!this.constructData.console?.enabled)
         console.log(`${loggingData.name}     ` + loggingData.message)
@@ -351,8 +364,7 @@ export class Log {
         .close(2000)
         .then(async () => {
           await this.log(
-            new Error('Logger successfully shutdown - safe to end all process'),
-            2
+            new Error('Logger successfully shutdown - safe to end all process')
           )
           resolve()
         })
