@@ -1,6 +1,6 @@
 {
   "name": "@videndum/utilities",
-  "version": "1.0.0-alpha.7",
+  "version": "1.0.0-alpha.8",
   "description": "Utilities used by Videndum Studios to enable Logging, i18n, and much more",
   "repository": {
     "type": "git",
