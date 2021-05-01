@@ -1,4 +1,5 @@
 import * as index from '../src/index'
+import { loggingData } from '../src/index'
 import { data } from './config'
 
 test('test logger builds', async () => {
@@ -15,7 +16,7 @@ test('logs to console', async () => {
   while (logger.configured) {
     console.log('looping')
   } //delay to ensure logger is setup
-  await logger.log(new Error('Successfully built logging class'), 2)
+  await logger.log(new loggingData('200', 'Successfully built logging class'))
   await logger.shutdown()
 })
 
@@ -25,7 +26,7 @@ test('logs to sentry', async () => {
   while (logger.configured) {
     console.log('looping')
   } //delay to ensure logger is setup
-  await logger.log(new Error('Successfully logged to sentry'), 4)
+  await logger.log(new loggingData('500', 'Successfully logged to sentry'))
   await logger.shutdown()
 })
 
@@ -35,7 +36,7 @@ test('logs to gcp', async () => {
   while (logger.configured) {
     console.log('looping')
   } //delay to ensure logger is setup
-  await logger.log(new Error('Successfully logged to gcp'), 2)
+  await logger.log(new loggingData('200', 'Successfully logged to gcp'))
   await logger.shutdown()
 })
 
@@ -45,6 +46,6 @@ test('logs to file', async () => {
   while (logger.configured) {
     console.log('looping')
   } //delay to ensure logger is setup
-  await logger.log(new Error('Successfully logged to file'), 2)
+  await logger.log(new loggingData('200', 'Successfully logged to file'))
   await logger.shutdown()
 })

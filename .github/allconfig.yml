@@ -18,7 +18,7 @@ autoWhitelist:
     'github-user',
     'actions-user',
     'web-flow',
-    'VidendumStudios',
+    'VidendumStudios'
   ]
 autoDestination: 'master'
 autoBody: ':crown: *An automated PR*'

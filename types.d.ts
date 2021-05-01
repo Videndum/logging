@@ -1,17 +1,20 @@
-import { Metadata } from '@google-cloud/logging/build/src/log'
+import { loggingData } from 'src'
 
-export interface ConstructData {
-  gcp?: GCPData
-  sentry?: SentryData
-  file?: fileData
-  console?: consoleData
+declare global {
+  namespace NodeJS {
+    interface Global {
+      __rootdir__: string
+      logging: any
+    }
+  }
 }
+
 export interface fileData {
   enabled: boolean
   config: {
     logDirectory: string
     fileNamePattern: string
-    dateFormat: string
+    dateFormat?: string
   }
 }
 export interface consoleData {
@@ -44,11 +47,11 @@ export interface SentryData {
     context?: SentryContext[]
   }
 }
-type SentryContext = {
+export type SentryContext = {
   name: string
   data: Record<string, unknown>
 }
-type StringPair = {
+export type StringPair = {
   key: string
   value: string
 }
@@ -57,38 +60,7 @@ export type constructPair = {
   level: number
 }
 
-export class loggingData extends Error {
-  errors?: Error[] | Error
-  translate?: boolean
-  userData?: userData
-  T?: T
-  metadata?: Metadata
-  constructor(
-    name: LoggingLevels,
-    message?: string,
-    errors?: Error[] | Error,
-    options?: {
-      translate?: boolean
-      userData?: userData
-      T?: T
-      metadata?: Metadata
-    }
-  ) {
-    super(message)
-    this.name = name
-    this.errors = errors
-    this.translate = options?.translate
-    this.userData = options?.userData
-    this.T = options?.T
-    this.metadata = options?.metadata
-
-    // restore prototype chain
-    const actualProto = new.target.prototype
-    Object.setPrototypeOf(this, actualProto)
-  }
-}
-
-type userData = {
+export type userData = {
   id?: string
   email?: string
   username?: string
@@ -96,31 +68,23 @@ type userData = {
   arch?: string
   release?: string
 }
+
 export type LoggingLevels =
-  | 'DEFAULT'
   | '0' // the log entry has no assigned severity level.
-  | 'DEBUG'
   | '100' //  Debug or trace information.
-  | 'INFO'
   | '200' //  Routine information, such as ongoing status or performance.
-  | 'NOTICE'
   | '300' //  Normal but significant events, such as start up, shut down, or a configuration change.
-  | 'WARN'
   | '400' //  Warning events might cause problems.
-  | 'ERROR'
   | '500' //  Error events are likely to cause problems.
-  | 'CRITICAL'
   | '600' //  Critical events cause more severe problems or outages.
-  | 'ALERT'
   | '700' //  A person must take an action immediately.
-  | 'EMERGENCY'
   | '800' //  One or more systems are unusable.
 
 export type T = {
   defaultValue?: string[]
   count?: number
   context?: string
-  replace?: string[]
+  replace?: any[] | {}
   lng?: string
   lngs?: string[]
   fallbackLng?: string
@@ -133,7 +97,8 @@ export type T = {
   interpolation?: interpolation
   skipInterpolation?: boolean
 }
-type interpolation = {
+
+export type interpolation = {
   format?: () => string
   formatSeparator?: string
   escape?: (str?: string) => string

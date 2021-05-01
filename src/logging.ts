@@ -1,28 +1,21 @@
 import { Log, Logging } from '@google-cloud/logging'
+import { Metadata } from '@google-cloud/logging/build/src/log'
 import { RewriteFrames } from '@sentry/integrations'
 import * as Sentry from '@sentry/node'
+import chalk from 'chalk'
 import * as fs from 'fs'
 import os from 'os'
-import { i18 } from './localize'
 import {
-  ConstructData,
+  consoleData,
   constructPair,
   fileData,
   GCPData,
-  loggingData,
   LoggingLevels,
-  SentryData
-} from './types'
-
-const chalk = require('chalk')
-
-declare global {
-  namespace NodeJS {
-    interface Global {
-      __rootdir__: string
-    }
-  }
-}
+  SentryData,
+  T,
+  userData
+} from 'types'
+import { i18, Localizer } from './localize'
 
 global.__rootdir__ = __dirname || process.cwd()
 
@@ -34,19 +27,22 @@ global.__rootdir__ = __dirname || process.cwd()
 export const style = {
   brand: {
     videndumPurple: chalk.hex('4B428E')
-  },
-  log: {
-    default: chalk.inverse,
-    debug: chalk.grey,
-    info: chalk.green,
-    notice: chalk.green,
-    warn: chalk.white,
-    error: chalk.yellow,
-    critical: chalk.yellow,
-    alert: chalk.red,
-    emergency: chalk.red
   }
 }
+type logLevels = {
+  name: logTypes
+  chalk: any
+}[]
+type logTypes =
+  | 'DEFAULT'
+  | 'DEBUG'
+  | 'INFO'
+  | 'NOTICE'
+  | 'WARN'
+  | 'ERROR'
+  | 'CRITICAL'
+  | 'ALERT'
+  | 'EMERGENCY'
 
 /**
  * Main class used for package
@@ -55,28 +51,61 @@ export const style = {
  */
 export class Logger {
   private gcp: Logging = new Logging()
-  protected constructData: ConstructData
+  protected constructData: ConstructData | undefined
   public loglevel: number = 1
   public readonly sentry = Sentry
-  public readonly loglevels = [
-    'DEFAULT',
-    'DEBUG',
-    'INFO',
-    'NOTICE',
-    'WARN',
-    'ERROR',
-    'CRITICAL',
-    'ALERT',
-    'EMERGENCY'
+  public readonly loglevels: logLevels = [
+    {
+      name: 'DEFAULT',
+      chalk: chalk.inverse
+    },
+    {
+      name: 'DEBUG',
+      chalk: chalk.grey
+    },
+    {
+      name: 'INFO',
+      chalk: chalk.green
+    },
+    {
+      name: 'NOTICE',
+      chalk: chalk.greenBright
+    },
+    {
+      name: 'WARN',
+      chalk: chalk.white
+    },
+    {
+      name: 'ERROR',
+      chalk: chalk.yellow
+    },
+    {
+      name: 'CRITICAL',
+      chalk: chalk.yellow
+    },
+    {
+      name: 'ALERT',
+      chalk: chalk.red
+    },
+    {
+      name: 'EMERGENCY',
+      chalk: chalk.red
+    }
   ]
   private constructorLogs: constructPair[] = []
   gcpLogger: Log | undefined
   public configured: boolean = false
+  i18: Localizer = new Localizer()
 
-  constructor(constructData: ConstructData) {
-    this.constructData = constructData
-    if (process.env.LOGLEVEL) this.loglevel = +process.env.LOGLEVEL
-    this.configureLogger(constructData)
+  constructor(options: { i18?: i18; logger: ConstructData }) {
+    this.main(options)
+  }
+  async main(options: { i18?: i18; logger: ConstructData }) {
+    this.constructData = options.logger
+    await this.i18.main(options.i18)
+    if (options.logger.logLevel) this.setloglevel(options.logger.logLevel)
+    else if (process.env.LOGLEVEL) this.loglevel = +process.env.LOGLEVEL
+    this.configureLogger(options.logger)
   }
 
   async configureLogger(constructData: ConstructData) {
@@ -91,11 +120,11 @@ export class Logger {
     this.configured = true
   }
 
-  configureGCP(gcpData: GCPData) {
+  async configureGCP(gcpData: GCPData) {
     this.constructorLogs.push({
       data: {
-        name: 'INFO',
-        message: 'logging.gcp.constructor',
+        name: '200',
+        message: 'videndum:logging.gcp.constructor',
         translate: true
       },
       level: 1
@@ -104,11 +133,11 @@ export class Logger {
     this.gcpLogger = this.gcp.log(gcpData.logname)
   }
 
-  configureSentry(SentryData: SentryData) {
+  async configureSentry(SentryData: SentryData) {
     this.constructorLogs.push({
       data: {
-        name: 'INFO',
-        message: 'logging.sentry.constructor',
+        name: '200',
+        message: 'videndum:logging.sentry.constructor',
         translate: true
       },
       level: 1
@@ -138,8 +167,8 @@ export class Logger {
     } catch (_) {
       this.constructorLogs.push({
         data: {
-          name: 'INFO',
-          message: 'logging.sentry.error',
+          name: '200',
+          message: 'videndum:logging.sentry.error',
           errors: _,
           translate: true
         },
@@ -153,11 +182,11 @@ export class Logger {
    * @author TGTGamer
    * @since 1.0.0-alpha
    */
-  configureFile(fileData: fileData) {
+  async configureFile(fileData: fileData) {
     this.constructorLogs.push({
       data: {
-        name: 'INFO',
-        message: 'logging.file.constructor',
+        name: '200',
+        message: 'videndum:logging.file.constructor',
         translate: true
       },
       level: 1
@@ -168,8 +197,8 @@ export class Logger {
       } else {
         this.constructorLogs.push({
           data: {
-            name: 'INFO',
-            message: 'errors.fileDirectory.caught',
+            name: '200',
+            message: 'videndum:errors.fileDirectory.caught',
             errors: err,
             translate: true
           },
@@ -182,8 +211,8 @@ export class Logger {
             if (err)
               this.constructorLogs.push({
                 data: {
-                  name: 'INFO',
-                  message: 'errors.fileDirectory.thrown',
+                  name: '200',
+                  message: 'videndum:errors.fileDirectory.thrown',
                   errors: err,
                   translate: true
                 },
@@ -192,8 +221,8 @@ export class Logger {
             else
               this.constructorLogs.push({
                 data: {
-                  name: 'INFO',
-                  message: 'errors.fileDirectory.solved',
+                  name: '200',
+                  message: 'videndum:errors.fileDirectory.solved',
                   errors: err,
                   translate: true
                 },
@@ -210,12 +239,8 @@ export class Logger {
    * Change the logging level.
    * @param {number | string} level - Logging level to use.
    */
-  setloglevel(level: LoggingLevels) {
-    if (Number(level) == undefined) {
-      this.loglevel = this.loglevels.indexOf(level)
-    } else {
-      this.loglevel = Number(level) / 100
-    }
+  async setloglevel(level: LoggingLevels) {
+    this.loglevel = Number(level) / 100
   }
 
   /**
@@ -231,8 +256,9 @@ export class Logger {
    * @return logs data to console, sentry and log file as appropriate
    */
   async log(loggingData: loggingData) {
+    if (this.constructData == undefined) return
     if (loggingData.translate)
-      loggingData.message = i18.t(loggingData.message, loggingData.T)
+      loggingData.message = this.i18.t(loggingData.message, loggingData.T)
     if (loggingData.errors) {
       if (!Array.isArray(loggingData.errors))
         loggingData.message = loggingData.message + ' ' + loggingData.errors
@@ -251,9 +277,7 @@ export class Logger {
       (loggingData.userData.release = os.release())
 
     // Defines log type
-    let type = Number(loggingData.name)
-    if (type != NaN) type = type / 100
-    else type = this.loglevels.indexOf(loggingData.name)
+    let type = Number(loggingData.name) / 100
 
     // log to cloud logger
     if (this.constructData.gcp?.enabled) {
@@ -279,26 +303,20 @@ export class Logger {
         this.constructData.gcp.enabled = false
       }
     }
-
     // Translate the metadata
+    loggingData.name = this.loglevels[type].name.toLowerCase()
     loggingData.name = await this.translate(
-      `logging.${loggingData.name.toLowerCase()}`
+      `videndum:logging.${loggingData.name}`
     )
+    if (loggingData.name) loggingData.name = loggingData.name.toUpperCase()
 
-    // add spacing
-    if (loggingData.name.length < 15) {
-      for (let i = loggingData.name.length; i < 15; i++) {
-        loggingData.name += ' '
-      }
-    }
-
-    if (type >= this.loglevel || process.env.DEBUG == 'true' || type == 1) {
+    if (type >= this.loglevel || process.env.DEBUG == 'true') {
       // Log to local logger
       if (this.constructData.file?.enabled) {
         try {
           fs.appendFile(
             `${this.constructData.file?.config.logDirectory}/${this.constructData.file?.config.fileNamePattern}`,
-            `${loggingData.name}     ` + loggingData.message + '\r\n',
+            `[${loggingData.name}]  ` + loggingData.message + '\r\n',
             err => {
               if (err) throw err
             }
@@ -338,19 +356,16 @@ export class Logger {
           this.constructData.sentry.enabled = false
         }
       }
-      // @ts-expect-error
-      loggingData.name = style.log[this.loglevels[type].toLowerCase()](
-        loggingData.name
-      )
+      loggingData.name = this.loglevels[type].chalk(loggingData.name)
 
-      if (!!this.constructData.console?.enabled)
-        console.log(`${loggingData.name}     ` + loggingData.message)
+      // if (!!this.constructData.console?.enabled)
+      console.log(`[${loggingData.name}]  ` + loggingData.message)
     }
     return
   }
 
-  translate(name: string): string {
-    return i18.t(name)
+  async translate(name: string): Promise<string> {
+    return this.i18.t(name)
   }
 
   /**
@@ -358,7 +373,7 @@ export class Logger {
    * @author TGTGamer
    * @since 1.0.0-alpha
    */
-  shutdown(): Promise<void> {
+  async shutdown(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.sentry
         .close(2000)
@@ -371,4 +386,48 @@ export class Logger {
         .catch(_ => reject(_))
     })
   }
+}
+export interface loggingOptions {
+  name: LoggingLevels
+  message?: string
+  options?: {
+    errors?: Error
+    translate?: boolean
+    userData?: userData
+    T?: T
+    metadata?: Metadata
+  }
+}
+
+export class loggingData extends Error {
+  errors?: Error
+  translate?: boolean
+  userData?: userData
+  T?: T
+  metadata?: Metadata
+  constructor(
+    name: loggingOptions['name'],
+    message?: loggingOptions['message'],
+    options?: loggingOptions['options']
+  ) {
+    super(message)
+    this.name = name
+    this.errors = options?.errors
+    this.translate = options?.translate
+    this.userData = options?.userData
+    this.T = options?.T
+    this.metadata = options?.metadata
+
+    // restore prototype chain
+    // @ts-ignore
+    const actualProto = new.target.prototype
+    if (actualProto) Object.setPrototypeOf(this, actualProto)
+  }
+}
+export interface ConstructData {
+  gcp?: GCPData
+  sentry?: SentryData
+  file?: fileData
+  console?: consoleData
+  logLevel?: LoggingLevels
 }
