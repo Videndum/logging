@@ -1,6 +1,6 @@
 {
   "name": "@videndum/utilities",
-  "version": "1.0.0-alpha.9",
+  "version": "1.0.0-alpha.17",
   "description": "Utilities used by Videndum Studios to enable Logging, i18n, and much more",
   "repository": {
     "type": "git",
@@ -32,15 +32,18 @@
     "dev:run": "yarn dev:i18n && npm run dev:tsc && npm run dev:format && node lib/index.js",
     "dev:test": "jest --json --outputFile=result.json --testLocationInResults",
     "dev:tsc": "tsc -p tsconfig.json",
+    "release": "yarn version --prerelease --no-git-tag-version && yarn publish",
     "run": "node lib/index.js",
     "test": "jest"
   },
   "dependencies": {
-    "@google-cloud/logging": "^8.0.8",
+    "@google-cloud/logging": "^9.3.0",
     "@sentry/integrations": "^5.27.6",
-    "@sentry/node": "^5.27.6",
+    "@sentry/node": "^6.4.1",
+    "@sentry/tracing": "^6.4.1",
     "app-root-path": "^3.0.0",
     "chalk": "^4.1.0",
+    "html-entities": "^2.3.2",
     "i18next": "^19.5.2",
     "i18next-chained-backend": "^2.0.1",
     "i18next-fs-backend": "^1.0.7",
