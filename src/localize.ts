@@ -1,7 +1,7 @@
 import fs, { PathLike } from 'fs'
 import i18Next, { Resource } from 'i18next'
 import path from 'path'
-import { T } from 'types'
+import { T } from '.'
 const intervalPlural = require('i18next-intervalplural-postprocessor')
 // const ReactPostprocessor = require('i18next-react-postprocessor')
 export interface i18 {

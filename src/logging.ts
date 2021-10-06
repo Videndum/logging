@@ -1,20 +1,20 @@
 import { Log, Logging } from '@google-cloud/logging'
-import { Metadata } from '@google-cloud/logging/build/src/log'
-import { RewriteFrames } from '@sentry/integrations'
 import * as Sentry from '@sentry/node'
 import chalk from 'chalk'
 import * as fs from 'fs'
+import { decode } from 'html-entities'
 import os from 'os'
 import {
-  consoleData,
+  ConstructData,
   constructPair,
-  fileData,
+  fileDataType,
   GCPData,
+  LoggingDataClass,
   LoggingLevels,
-  SentryData,
-  T,
-  userData
-} from 'types'
+  LogReturn,
+  LogReturned,
+  SentryDataType
+} from '.'
 import { i18, Localizer } from './localize'
 
 global.__rootdir__ = __dirname || process.cwd()
@@ -31,7 +31,7 @@ export const style = {
 }
 type logLevels = {
   name: logTypes
-  chalk: any
+  chalk: chalk.Chalk
 }[]
 type logTypes =
   | 'DEFAULT'
@@ -114,7 +114,7 @@ export class Logger {
       await this.configureSentry(constructData.sentry)
     if (constructData.file?.enabled)
       await this.configureFile(constructData.file)
-    await this.constructorLogs.forEach(log => {
+    this.constructorLogs.forEach(log => {
       this.log(log.data)
     })
     this.configured = true
@@ -133,7 +133,7 @@ export class Logger {
     this.gcpLogger = this.gcp.log(gcpData.logname)
   }
 
-  async configureSentry(SentryData: SentryData) {
+  async configureSentry(SentryData: SentryDataType) {
     this.constructorLogs.push({
       data: {
         name: '200',
@@ -149,21 +149,13 @@ export class Logger {
           new Sentry.Integrations.Console(),
           new Sentry.Integrations.Modules(),
           new Sentry.Integrations.Http({ tracing: true }),
-          new RewriteFrames({ root: global.__rootdir__ })
+          new Sentry.Integrations.OnUncaughtException(),
+          new Sentry.Integrations.OnUnhandledRejection({ mode: 'warn' }),
+          new Sentry.Integrations.FunctionToString()
         ],
         tracesSampleRate: 0.2
       })
-      this.sentry.configureScope(scope => {
-        if (SentryData.extras?.user) scope.setUser(SentryData.extras.user)
-        if (SentryData.extras?.tags)
-          SentryData.extras.tags.forEach(tag => {
-            scope.setTag(tag.key, tag.value)
-          })
-        if (SentryData.extras?.context)
-          SentryData.extras.context.forEach(context => {
-            scope.setContext(context.name, context.data)
-          })
-      })
+      await this.configureSentryScope()
     } catch (_) {
       this.constructorLogs.push({
         data: {
@@ -177,12 +169,26 @@ export class Logger {
     }
   }
 
+  async configureSentryScope() {
+    this.sentry.configureScope(scope => {
+      scope.clear()
+      if (this.constructData?.sentry?.extras?.user)
+        scope.setUser(this.constructData?.sentry?.extras.user)
+      if (this.constructData?.sentry?.extras?.tags)
+        scope.setTags(this.constructData?.sentry?.extras.tags)
+      if (this.constructData?.sentry?.extras?.context)
+        this.constructData?.sentry?.extras.context.forEach(context => {
+          scope.setContext(context.name, context.data)
+        })
+    })
+  }
+
   /**
    * Sets up local logging to file
    * @author TGTGamer
    * @since 1.0.0-alpha
    */
-  async configureFile(fileData: fileData) {
+  async configureFile(fileData: fileDataType) {
     this.constructorLogs.push({
       data: {
         name: '200',
@@ -207,13 +213,13 @@ export class Logger {
         fs.mkdir(
           fileData.config.logDirectory,
           { recursive: false },
-          async (err: any) => {
-            if (err)
+          async (err2: any) => {
+            if (err2)
               this.constructorLogs.push({
                 data: {
                   name: '200',
                   message: 'videndum:errors.fileDirectory.thrown',
-                  errors: err,
+                  errors: err2,
                   translate: true
                 },
                 level: 6
@@ -223,14 +229,13 @@ export class Logger {
                 data: {
                   name: '200',
                   message: 'videndum:errors.fileDirectory.solved',
-                  errors: err,
+                  errors: err2,
                   translate: true
                 },
                 level: 3
               })
           }
         )
-        return
       }
     })
   }
@@ -255,10 +260,12 @@ export class Logger {
    *  }
    * @return logs data to console, sentry and log file as appropriate
    */
-  async log(loggingData: loggingData) {
-    if (this.constructData == undefined) return
+  async log(loggingData: LoggingDataClass): Promise<LogReturn> {
+    if (this.constructData == undefined)
+      throw new Error('Logging Utility hasnt initialised')
     if (loggingData.translate)
       loggingData.message = this.i18.t(loggingData.message, loggingData.T)
+    if (loggingData.decode) loggingData.message = decode(loggingData.message)
     if (loggingData.errors) {
       if (!Array.isArray(loggingData.errors))
         loggingData.message = loggingData.message + ' ' + loggingData.errors
@@ -268,51 +275,75 @@ export class Logger {
         )
       }
     }
-    if (!loggingData.userData)
+    if (!loggingData.userData) {
       loggingData.userData = {
         username: os.userInfo().username
       }
-    ;(loggingData.userData.platform = os.platform()),
-      (loggingData.userData.arch = os.arch()),
-      (loggingData.userData.release = os.release())
-
+      loggingData.userData.platform = os.platform()
+      loggingData.userData.arch = os.arch()
+      loggingData.userData.release = os.release()
+    }
+    let result: LogReturn = {}
     // Defines log type
     let type = Number(loggingData.name) / 100
-
-    // log to cloud logger
-    if (this.constructData.gcp?.enabled) {
-      try {
-        if (!this.gcpLogger)
-          throw new Error(
-            "Can't log to google cloud platform without valid log configuration"
-          )
-        if (!loggingData.metadata)
-          loggingData.metadata = {
-            resource: {
-              type: 'global'
-            },
-            severity: loggingData.name
-          }
-        let entry = this.gcpLogger.entry(
-          loggingData.metadata,
-          loggingData.message
-        )
-        await this.gcpLogger.write(entry)
-      } catch (err) {
-        this.log(err)
-        this.constructData.gcp.enabled = false
-      }
-    }
+    result.gcp = await this.loggcp(loggingData)
     // Translate the metadata
     loggingData.name = this.loglevels[type].name.toLowerCase()
     loggingData.name = await this.translate(
       `videndum:logging.${loggingData.name}`
     )
     if (loggingData.name) loggingData.name = loggingData.name.toUpperCase()
+    result.console = await this.logconsole(loggingData, type)
+    result.file = await this.logfile(loggingData, type)
+    result.sentry = await this.logsentry(loggingData, type)
+    return result
+  }
+  async loggcp(loggingData: LoggingDataClass): Promise<LogReturned> {
+    // log to cloud logger
+    if (this.constructData?.gcp?.enabled) {
+      try {
+        if (!this.gcpLogger)
+          return {
+            logged: false
+          }
+        if (!loggingData.metadata)
+          loggingData.metadata = {
+            resource: {
+              type: 'global'
+            },
+            severity: Number(loggingData.name)
+          }
+        let entry = this.gcpLogger.entry(
+          loggingData.metadata,
+          loggingData.message
+        )
+        const logged = await this.gcpLogger.write(entry)
+        return {
+          logged: true,
+          success: true,
+          response: logged
+        }
+      } catch (err) {
+        console.log(err)
+        this.constructData.gcp.enabled = false
+        return {
+          logged: true,
+          success: false
+        }
+      }
+    }
+    return {
+      logged: false
+    }
+  }
 
+  async logfile(
+    loggingData: LoggingDataClass,
+    type: number
+  ): Promise<LogReturned> {
     if (type >= this.loglevel || process.env.DEBUG == 'true') {
       // Log to local logger
-      if (this.constructData.file?.enabled) {
+      if (this.constructData?.file?.enabled) {
         try {
           fs.appendFile(
             `${this.constructData.file?.config.logDirectory}/${this.constructData.file?.config.fileNamePattern}`,
@@ -321,47 +352,95 @@ export class Logger {
               if (err) throw err
             }
           )
+          return {
+            logged: true,
+            success: true
+          }
         } catch (err) {
           this.log(err)
           this.constructData.file.enabled = false
+          return {
+            logged: true,
+            success: false
+          }
         }
       }
-
-      // Log to sentry
-      if (type >= 4 && this.constructData.sentry?.enabled) {
-        try {
-          const t: number = type,
-            data = loggingData
-          data.name = loggingData.message
-          this.sentry.withScope(scope => {
-            scope.setUser({
-              username: loggingData.userData?.username,
-              email: loggingData.userData?.email
-            })
-            scope.setContext('platform', {
-              string: loggingData.userData?.platform
-            })
-            scope.setContext('arch', { string: loggingData.userData?.arch })
-            scope.setContext('platform release', {
-              string: loggingData.userData?.release
-            })
-            if (t == 4) scope.setLevel(this.sentry.Severity.Warning)
-            else if (t == 5) scope.setLevel(this.sentry.Severity.Error)
-            else if (t == 6) scope.setLevel(this.sentry.Severity.Critical)
-            else if (t >= 7) scope.setLevel(this.sentry.Severity.Fatal)
-            this.sentry.captureException(data)
-          })
-        } catch (_) {
-          this.log(_)
-          this.constructData.sentry.enabled = false
-        }
-      }
-      loggingData.name = this.loglevels[type].chalk(loggingData.name)
-
-      // if (!!this.constructData.console?.enabled)
-      console.log(`[${loggingData.name}]  ` + loggingData.message)
     }
-    return
+    return {
+      logged: false
+    }
+  }
+  async logsentry(
+    loggingData: LoggingDataClass,
+    type: number
+  ): Promise<LogReturned> {
+    // Log to sentry
+    if (type > 4 && this.constructData?.sentry?.enabled) {
+      try {
+        const data = loggingData
+        data.name = loggingData.message
+        this.sentry.configureScope(scope => {
+          scope.setUser({
+            username: loggingData.userData?.username,
+            email: loggingData.userData?.email
+          })
+          scope.setContext('device', {
+            Platform: loggingData.userData?.platform,
+            Arch: loggingData.userData?.arch,
+            Release: loggingData.userData?.release
+          })
+          scope.setTag('Platform', loggingData.userData?.platform)
+          scope.setTag('Arch', loggingData.userData?.arch)
+          if (loggingData.tags) scope.setTags(loggingData.tags)
+          if (loggingData.context)
+            loggingData.context.forEach(context =>
+              scope.setContext(context.name, context.data)
+            )
+          if (type == 5) scope.setLevel(this.sentry.Severity.Error)
+          else if (type == 6) scope.setLevel(this.sentry.Severity.Critical)
+          else if (type >= 7) scope.setLevel(this.sentry.Severity.Fatal)
+        })
+        const returning: LogReturned = {
+          logged: true,
+          success: true,
+          eventID: this.sentry.captureException(data)
+        }
+        await this.configureSentryScope()
+        return returning
+      } catch (_) {
+        this.log(
+          new LoggingDataClass(LoggingLevels.error, 'Failed to log to sentry', {
+            errors: _
+          })
+        )
+        this.constructData.sentry.enabled = false
+        return {
+          logged: true,
+          success: false
+        }
+      }
+    }
+    return {
+      logged: false
+    }
+  }
+
+  async logconsole(
+    loggingData: LoggingDataClass,
+    type: number
+  ): Promise<LogReturned> {
+    if (this.constructData?.console?.enabled) {
+      loggingData.name = this.loglevels[type].chalk(loggingData.name)
+      // if (!!this.constructData?.console?.enabled)
+      console.log(`[${loggingData.name}]  ` + loggingData.message)
+      return {
+        logged: true,
+        success: true
+      }
+    } else
+      return {
+        logged: false
+      }
   }
 
   async translate(name: string): Promise<string> {
@@ -386,48 +465,4 @@ export class Logger {
         .catch(_ => reject(_))
     })
   }
-}
-export interface loggingOptions {
-  name: LoggingLevels
-  message?: string
-  options?: {
-    errors?: Error
-    translate?: boolean
-    userData?: userData
-    T?: T
-    metadata?: Metadata
-  }
-}
-
-export class loggingData extends Error {
-  errors?: Error
-  translate?: boolean
-  userData?: userData
-  T?: T
-  metadata?: Metadata
-  constructor(
-    name: loggingOptions['name'],
-    message?: loggingOptions['message'],
-    options?: loggingOptions['options']
-  ) {
-    super(message)
-    this.name = name
-    this.errors = options?.errors
-    this.translate = options?.translate
-    this.userData = options?.userData
-    this.T = options?.T
-    this.metadata = options?.metadata
-
-    // restore prototype chain
-    // @ts-ignore
-    const actualProto = new.target.prototype
-    if (actualProto) Object.setPrototypeOf(this, actualProto)
-  }
-}
-export interface ConstructData {
-  gcp?: GCPData
-  sentry?: SentryData
-  file?: fileData
-  console?: consoleData
-  logLevel?: LoggingLevels
 }
