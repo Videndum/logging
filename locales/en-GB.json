@@ -12,6 +12,7 @@
       "solved": "",
       "thrown": ""
     },
+    "logging": "",
     "unspecific": {
       "default": "",
       "localize": ""
@@ -24,14 +25,22 @@
     "default": "",
     "emergency": "",
     "error": "",
+    "file": {
+      "constructor": "",
+      "error": ""
+    },
+    "gcp": {
+      "constructor": "",
+      "error": ""
+    },
     "info": "",
     "level": "",
     "notice": "",
     "sentry": {
       "config": "",
       "config_dev": "",
-      "default": "",
-      "initialised": ""
+      "constructor": "",
+      "error": ""
     },
     "warn": ""
   }

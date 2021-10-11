@@ -1,6 +1,6 @@
 {
   "name": "@videndum/utilities",
-  "version": "1.0.0-alpha.17",
+  "version": "1.0.0-alpha.18",
   "description": "Utilities used by Videndum Studios to enable Logging, i18n, and much more",
   "repository": {
     "type": "git",
@@ -20,8 +20,16 @@
   "directories": {
     "lib": "lib",
     "doc": "docs",
-    "test": "__tests__"
+    "locales": "locales",
+    "test": "__tests__",
+    "src": "src"
   },
+  "files": [
+    "__tests__",
+    "docs",
+    "lib",
+    "locales"
+  ],
   "keywords": [],
   "scripts": {
     "build": "tsc",

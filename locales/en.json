@@ -14,8 +14,8 @@
     },
     "logging": "No valid data to log",
     "unspecific": {
-      "localize": "Data for localisation unavailable: {{what}}",
-      "default": "Something went wrong."
+      "default": "Something went wrong.",
+      "localize": "Data for localisation unavailable: {{what}}"
     }
   },
   "logging": {
@@ -25,22 +25,22 @@
     "default": "unknown",
     "emergency": "emergency",
     "error": "error",
+    "file": {
+      "constructor": "Setting up files for logging",
+      "error": "File Logging Error: "
+    },
+    "gcp": {
+      "constructor": "Setting up GCP for logging",
+      "error": "GCP Error: "
+    },
     "info": "info",
     "level": "Log level: ",
     "notice": "notice",
     "sentry": {
-      "error": "Sentry Error: ",
-      "constructor": "Setting up sentry for logging",
       "config": "Sentry is not configured. Please read how to configure sentry for error tracking in the @videndum/smartcloud documentation found at docs.smartcloud.gg",
-      "config_dev": "Sentry is not configured. Please read how to configure sentry for error tracking in the @videndum/smartcloud documentation found at docs.smartcloud.gg"
-    },
-    "gcp": {
-      "error": "GCP Error: ",
-      "constructor": "Setting up GCP for logging"
-    },
-    "file": {
-      "error": "File Logging Error: ",
-      "constructor": "Setting up files for logging"
+      "config_dev": "Sentry is not configured. Please read how to configure sentry for error tracking in the @videndum/smartcloud documentation found at docs.smartcloud.gg",
+      "constructor": "Setting up sentry for logging",
+      "error": "Sentry Error: "
     },
     "warn": "warn"
   }
