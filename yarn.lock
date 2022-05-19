@@ -572,9 +572,9 @@
     uuid "^8.0.0"
 
 "@overnightjs/core@^1.7.4":
-  version "1.7.5"
-  resolved "https://registry.yarnpkg.com/@overnightjs/core/-/core-1.7.5.tgz#df52792ec02c31b083bc5c6502f86b4d13028f0a"
-  integrity sha512-YKWXL6wHqAWMsC8QMsVzF1iatJ2KEaSPcZcm1/PKfJzHALQ3O5Kic3PuPAlBMVjdNeBm2/DWpuQL3ZuKiUp2AQ==
+  version "1.7.6"
+  resolved "https://registry.yarnpkg.com/@overnightjs/core/-/core-1.7.6.tgz#9e4191454f6ecb5bb1a455752b41557f541320e2"
+  integrity sha512-2MeVIG8MTLKAqLQKm7UvwDmMchhHka9A36o2PxjT0ES4wHm2lg6RkClRDrsavGU6LmHsx6WDQfVC11/aXZQjkQ==
   dependencies:
     express "^4.16.3"
     reflect-metadata "^0.1.13"
