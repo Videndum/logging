@@ -48,7 +48,7 @@
     "@google-cloud/logging": "^9.3.0",
     "@sentry/integrations": "^5.27.6",
     "@sentry/node": "^7.13.0",
-    "@sentry/tracing": "^6.4.1",
+    "@sentry/tracing": "^7.13.0",
     "app-root-path": "^3.0.0",
     "chalk": "^4.1.0",
     "html-entities": "^2.3.2",
