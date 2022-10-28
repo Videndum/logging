@@ -75,9 +75,5 @@
     "tslib": "^2.0.3",
     "tslint": "^6.1.0",
     "typescript": "^3.9.5"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry":"https://npm.pkg.github.com"
   }
 }
