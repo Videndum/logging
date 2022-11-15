@@ -19,7 +19,7 @@ jobs:
           mode: 'environment'
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Work in progress status
-        uses: wip/action@v1.1.0
+        uses: wip/action@v1.1.1
         if: ${{env.wip_enabled}} == true
 
   # Ensures semantic titles to ensure semantic is achieved when merge is squashed
