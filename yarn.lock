@@ -2363,9 +2363,9 @@ i18next-json-sync@^2.3.1:
     yargs "^5.0.0"
 
 i18next-react-postprocessor@^3.0.5:
-  version "3.0.5"
-  resolved "https://registry.yarnpkg.com/i18next-react-postprocessor/-/i18next-react-postprocessor-3.0.5.tgz#11fa9e3f1bba82b52d47f402dd0b3366011a9260"
-  integrity sha512-vZ2WquBiEGf114/o8AOdIzhD7zj35KalwiiZmLduPy9LfS+6GT4zFWGROS0FfNjxYlSobsYE/S5fkXNHG+IwwA==
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/i18next-react-postprocessor/-/i18next-react-postprocessor-3.1.0.tgz#54a1045928df6d960adeed0a71623473eebcd237"
+  integrity sha512-VG1k4KSEwuYQlGRtksPfcp6PXjOUCD5jRtrAW+nfAzds8ksKzTvScHt9ue7G8RPuqKS1Ctx3je1hDDd83usWVw==
   dependencies:
     md5-es "^1.8.2"
 
