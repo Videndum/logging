@@ -53,7 +53,7 @@
     "chalk": "^4.1.0",
     "html-entities": "^2.3.2",
     "i18next": "^19.5.2",
-    "i18next-chained-backend": "^2.0.1",
+    "i18next-chained-backend": "^4.2.0",
     "i18next-fs-backend": "^1.0.7",
     "i18next-intervalplural-postprocessor": "^3.0.0",
     "i18next-react-postprocessor": "^3.0.5"
