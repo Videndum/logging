@@ -17,7 +17,7 @@ jobs:
           mode: 'environment'
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: actions/checkout
-        uses: actions/checkout@v3.0.2
+        uses: actions/checkout@v4.1.2
 
       # Inclusive Org
       - run: if [ ${{env.inclusive_org}} === 'owner' ]; then echo "inclusiveorg=${{github.repository_owner}}" >> $GITHUB_ENV ; else echo "inclusiveorg=${{env.inclusive_org}}" >> $GITHUB_ENV ; fi

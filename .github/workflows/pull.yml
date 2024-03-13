@@ -52,7 +52,7 @@ jobs:
           settings: ${{ secrets.SETTINGS }}
           mode: 'environment'
           token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/checkout@v3.0.2
+      - uses: actions/checkout@v4.1.2
       # super Labeler
       - name: Super Labeller
         uses: Videndum/super-labeler-action@1.0.1
@@ -95,7 +95,7 @@ jobs:
           settings: ${{ secrets.SETTINGS }}
           mode: 'environment'
           token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/checkout@v3.0.2
+      - uses: actions/checkout@v4.1.2
       - name: Warn potential conflicts
         uses: wktk/conflibot@v1
         if: ${{env.conflict_pull}} == true

@@ -17,7 +17,7 @@ jobs:
           mode: 'environment'
           token: ${{ secrets.BOT_TOKEN }}
       - name: Checkout
-        uses: actions/checkout@v3.0.2
+        uses: actions/checkout@v4.1.2
       # super Labeler
       - name: Super Labeller
         uses: Videndum/super-labeler-action@1.0.1
